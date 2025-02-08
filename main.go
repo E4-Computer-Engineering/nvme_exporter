@@ -1,6 +1,10 @@
 package main
 
-// Export nvme smart-log metrics in prometheus format
+/* Export nvme smart-log and OCP smart-log metrics in prometheus format
+nvme smart-log field descriptions can be found on page 209 of:
+https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-Revision-2.1-2024.08.05-Ratified.pdf
+nvme ocp-smart-log field descriptions can be found on page 24 of:
+https://www.opencompute.org/documents/datacenter-nvme-ssd-specification-v2-5-pdf */
 
 import (
 	"flag"
@@ -44,10 +48,40 @@ type nvmeCollector struct {
     nvmePhysicalMediaUnitsWrittenLo *prometheus.Desc
     nvmePhysicalMediaUnitsReadHi *prometheus.Desc
     nvmePhysicalMediaUnitsReadLo *prometheus.Desc
+    nvmeBadUserNandBlocksRaw *prometheus.Desc
+    nvmeBadUserNandBlocksNormalized *prometheus.Desc
+    nvmeBadSystemNandBlocksRaw *prometheus.Desc
+    nvmeBadSystemNandBlocksNormalized *prometheus.Desc
+    nvmeXorRecoveryCount *prometheus.Desc
+    nvmeUncorrectableReadErrorCount *prometheus.Desc
+    nvmeSoftEccErrorCount *prometheus.Desc
+    nvmeEndToEndDetectedErrors *prometheus.Desc
+    nvmeEndToEndCorrectedErrors *prometheus.Desc
+    nvmeSystemDataPercentUsed *prometheus.Desc
+    nvmeRefreshCounts *prometheus.Desc
+    nvmeMaxUserDataEraseCounts *prometheus.Desc
+    nvmeMinUserDataEraseCounts *prometheus.Desc
+    nvmeNumberOfThermalThrottlingEvents *prometheus.Desc
+    nvmeCurrentThrottlingStatus *prometheus.Desc
+    nvmePcieCorrectableErrorCount *prometheus.Desc
+    nvmeIncompleteShutdowns *prometheus.Desc
+    nvmePercentFreeBlocks *prometheus.Desc
+    nvmeCapacitorHealth *prometheus.Desc
+    nvmeUnalignedIo *prometheus.Desc
+    nvmeSecurityVersionNumber *prometheus.Desc
+    nvmeNuseNamespaceUtilization *prometheus.Desc
+    nvmePlpStartCount *prometheus.Desc
+    nvmeEnduranceEstimate *prometheus.Desc
+    nvmeLogPageVersion *prometheus.Desc
+    nvmeLogPageGuid *prometheus.Desc
+    nvmeErrataVersionField *prometheus.Desc
+    nvmePointVersionField *prometheus.Desc
+    nvmeMinorVersionField *prometheus.Desc
+    nvmeMajorVersionField *prometheus.Desc
+    nvmeNvmeErrataVersion *prometheus.Desc
+    nvmePcieLinkRetrainingCount *prometheus.Desc
+    nvmePowerStateChangeCount *prometheus.Desc
 }
-
-// nvme smart-log field descriptions can be found on page 180 of:
-// https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-2_0-2021.06.02-Ratified-5.pdf
 
 func newNvmeCollector() prometheus.Collector {
 	return &nvmeCollector{
@@ -207,6 +241,204 @@ func newNvmeCollector() prometheus.Collector {
 			labels,
 			nil,
 		),
+		nvmeBadUserNandBlocksRaw: prometheus.NewDesc(
+			"nvme_bad_user_nand_blocks_raw",
+			"",
+			labels,
+			nil,
+		),
+		nvmeBadUserNandBlocksNormalized: prometheus.NewDesc(
+			"nvme_bad_user_nand_blocks_normalized",
+			"",
+			labels,
+			nil,
+		),
+		nvmeBadSystemNandBlocksRaw: prometheus.NewDesc(
+			"nvme_bad_system_nand_blocks_raw",
+			"",
+			labels,
+			nil,
+		),
+		nvmeBadSystemNandBlocksNormalized: prometheus.NewDesc(
+			"nvme_bad_system_nand_blocks_normalized",
+			"",
+			labels,
+			nil,
+		),
+		nvmeXorRecoveryCount: prometheus.NewDesc(
+			"nvme_xor_recovery_count",
+			"",
+			labels,
+			nil,
+		),
+		nvmeUncorrectableReadErrorCount: prometheus.NewDesc(
+			"nvme_uncorrectable_uead_error_count",
+			"",
+			labels,
+			nil,
+		),
+		nvmeSoftEccErrorCount: prometheus.NewDesc(
+			"nvme_soft_ecc_error_count",
+			"",
+			labels,
+			nil,
+		),
+		nvmeEndToEndDetectedErrors: prometheus.NewDesc(
+			"nvme_end_to_end_detected_errors",
+			"",
+			labels,
+			nil,
+		),
+		nvmeEndToEndCorrectedErrors: prometheus.NewDesc(
+			"nvme_end_to_end_corrected_errors",
+			"",
+			labels,
+			nil,
+		),
+		nvmeSystemDataPercentUsed: prometheus.NewDesc(
+			"nvme_system_data_percent_used",
+			"",
+			labels,
+			nil,
+		),
+		nvmeRefreshCounts: prometheus.NewDesc(
+			"nvme_refresh_counts",
+			"",
+			labels,
+			nil,
+		),
+		nvmeMaxUserDataEraseCounts: prometheus.NewDesc(
+			"nvme_max_user_data_erase_counts",
+			"",
+			labels,
+			nil,
+		),
+		nvmeMinUserDataEraseCounts: prometheus.NewDesc(
+			"nvme_min_user_data_erase_counts",
+			"",
+			labels,
+			nil,
+		),
+		nvmeNumberOfThermalThrottlingEvents: prometheus.NewDesc(
+			"nvme_number_of_thermal_throttling_events",
+			"",
+			labels,
+			nil,
+		),
+		nvmeCurrentThrottlingStatus: prometheus.NewDesc(
+			"nvme_current_throttling_status",
+			"",
+			labels,
+			nil,
+		),
+		nvmePcieCorrectableErrorCount: prometheus.NewDesc(
+			"nvme_pcie_correctable_error_count",
+			"",
+			labels,
+			nil,
+		),
+		nvmeIncompleteShutdowns: prometheus.NewDesc(
+			"nvme_incomplete_shutdowns",
+			"",
+			labels,
+			nil,
+		),
+		nvmePercentFreeBlocks: prometheus.NewDesc(
+			"nvme_percent_free_blocks",
+			"",
+			labels,
+			nil,
+		),
+		nvmeCapacitorHealth: prometheus.NewDesc(
+			"nvme_capacitor_health",
+			"",
+			labels,
+			nil,
+		),
+		nvmeUnalignedIo: prometheus.NewDesc(
+			"nvme_unaligned_io",
+			"",
+			labels,
+			nil,
+		),
+		nvmeSecurityVersionNumber: prometheus.NewDesc(
+			"nvme_security_version_number",
+			"",
+			labels,
+			nil,
+		),
+		nvmeNuseNamespaceUtilization: prometheus.NewDesc(
+			"nvme_nuse_namespace_utilization",
+			"",
+			labels,
+			nil,
+		),
+		nvmePlpStartCount: prometheus.NewDesc(
+			"nvme_plp_start_count",
+			"",
+			labels,
+			nil,
+		),
+		nvmeEnduranceEstimate: prometheus.NewDesc(
+			"nvme_endurance_estimate",
+			"",
+			labels,
+			nil,
+		),
+		nvmeLogPageVersion: prometheus.NewDesc(
+			"nvme_log_page_version",
+			"",
+			labels,
+			nil,
+		),
+		nvmeLogPageGuid: prometheus.NewDesc(
+			"nvme_log_page_guid",
+			"",
+			labels,
+			nil,
+		),
+		nvmeErrataVersionField: prometheus.NewDesc(
+			"nvme_errata_version_field",
+			"",
+			labels,
+			nil,
+		),
+		nvmePointVersionField: prometheus.NewDesc(
+			"nvme_point_version_field",
+			"",
+			labels,
+			nil,
+		),
+		nvmeMinorVersionField: prometheus.NewDesc(
+			"nvme_minor_version_field",
+			"",
+			labels,
+			nil,
+		),
+		nvmeMajorVersionField: prometheus.NewDesc(
+			"nvme_major_version_field",
+			"",
+			labels,
+			nil,
+		),
+		nvmeNvmeErrataVersion: prometheus.NewDesc(
+			"nvme_nvme_errata_version",
+			"",
+			labels,
+			nil,
+		),
+		nvmePcieLinkRetrainingCount: prometheus.NewDesc(
+			"nvme_pcie_link_retraining_count",
+			"",
+			labels,
+			nil,
+		),
+		nvmePowerStateChangeCount: prometheus.NewDesc(
+			"nvme_power_state_change_count",
+			"",
+			labels,
+			nil,
+		),
 	}
 }
 
@@ -237,27 +469,55 @@ func (c *nvmeCollector) Describe(ch chan<- *prometheus.Desc) {
     ch <- c.nvmePhysicalMediaUnitsWrittenLo
     ch <- c.nvmePhysicalMediaUnitsReadHi
     ch <- c.nvmePhysicalMediaUnitsReadLo
+    ch <- c.nvmeBadUserNandBlocksRaw
+    ch <- c.nvmeBadUserNandBlocksNormalized
+    ch <- c.nvmeBadSystemNandBlocksRaw
+    ch <- c.nvmeBadSystemNandBlocksNormalized
+    ch <- c.nvmeXorRecoveryCount
+    ch <- c.nvmeUncorrectableReadErrorCount
+    ch <- c.nvmeSoftEccErrorCount
+    ch <- c.nvmeEndToEndDetectedErrors
+    ch <- c.nvmeEndToEndCorrectedErrors
+    ch <- c.nvmeSystemDataPercentUsed
+    ch <- c.nvmeRefreshCounts
+    ch <- c.nvmeMaxUserDataEraseCounts
+    ch <- c.nvmeMinUserDataEraseCounts
+    ch <- c.nvmeNumberOfThermalThrottlingEvents
+    ch <- c.nvmeCurrentThrottlingStatus
+    ch <- c.nvmePcieCorrectableErrorCount
+    ch <- c.nvmeIncompleteShutdowns
+    ch <- c.nvmePercentFreeBlocks
+    ch <- c.nvmeCapacitorHealth
+    ch <- c.nvmeUnalignedIo
+    ch <- c.nvmeSecurityVersionNumber
+    ch <- c.nvmeNuseNamespaceUtilization
+    ch <- c.nvmePlpStartCount
+    ch <- c.nvmeEnduranceEstimate
+    ch <- c.nvmeLogPageVersion
+    ch <- c.nvmeLogPageGuid
+    ch <- c.nvmeErrataVersionField
+    ch <- c.nvmePointVersionField
+    ch <- c.nvmeMinorVersionField
+    ch <- c.nvmeMajorVersionField
+    ch <- c.nvmeNvmeErrataVersion
+    ch <- c.nvmePcieLinkRetrainingCount
+    ch <- c.nvmePowerStateChangeCount
 }
 
 func executeCommand(cmd string, args ...string) ([]byte, error) {
     command := exec.Command(cmd, args...)
     output, err := command.CombinedOutput()
     if err != nil {
-        log.Printf("error running %s command: %s, output: %s", cmd, err, string(output))
         return nil, fmt.Errorf("error running %s command: %s, output: %s", cmd, err, string(output))
     }
     if !gjson.Valid(string(output)) {
-        log.Printf("invalid JSON output from %s command: %s", cmd, string(output))
         return nil, fmt.Errorf("invalid JSON output from %s command: %s", cmd, string(output))
     }
     return output, nil
 }
 
 func (c *nvmeCollector) Collect(ch chan<- prometheus.Metric) {
-    nvmeDeviceList, err := c.getDeviceList()
-    if err != nil {
-        log.Fatalf("Error running nvme command: %s\n", err)
-    }
+    nvmeDeviceList, _ := c.getDeviceList()
     for _, nvmeDevice := range nvmeDeviceList {
         c.collectSmartLogMetrics(ch, nvmeDevice)
         c.collectOcpSmartLogMetrics(ch, nvmeDevice)
@@ -267,7 +527,7 @@ func (c *nvmeCollector) Collect(ch chan<- prometheus.Metric) {
 func (c *nvmeCollector) getDeviceList() ([]gjson.Result, error) {
     nvmeDeviceCmd, err := executeCommand("nvme", "list", "-o", "json")
     if err != nil {
-        return nil, err
+        log.Printf("Error running nvme list -o json: %s\n", err)
     }
     return gjson.Get(string(nvmeDeviceCmd), "Devices.#.DevicePath").Array(), nil
 }
@@ -275,7 +535,7 @@ func (c *nvmeCollector) getDeviceList() ([]gjson.Result, error) {
 func (c *nvmeCollector) collectSmartLogMetrics(ch chan<- prometheus.Metric, device gjson.Result) {
     nvmeSmartLog, err := executeCommand("nvme", "smart-log", device.String(), "-o", "json")
     if err != nil {
-        log.Fatalf("Error running nvme smart-log command for device %s: %s\n", device.String(), err)
+        log.Printf("Error running smart-log %s -o json: %s\n", device.String(), err)
     }
     nvmeSmartLogMetrics := gjson.GetMany(string(nvmeSmartLog),
 										 "critical_warning",
@@ -306,7 +566,7 @@ func (c *nvmeCollector) collectSmartLogMetrics(ch chan<- prometheus.Metric, devi
 func (c *nvmeCollector) collectOcpSmartLogMetrics(ch chan<- prometheus.Metric, device gjson.Result) {
     nvmeOcpSmartLog, err := executeCommand("nvme", "ocp", "smart-add-log", device.String(), "-o", "json")
     if err != nil {
-        log.Fatalf("Error running nvme ocp smart-add-log command for device %s: %s\n", device.String(), err)
+        log.Printf("Error running smart-add-log %s -o json: %s\n", device.String(), err)
     }
     nvmeOcpSmartLogMetrics := gjson.GetMany(string(nvmeOcpSmartLog),
 											"Physical media units written.hi",
@@ -380,6 +640,39 @@ func (c *nvmeCollector) sendOcpSmartLogMetrics(ch chan<- prometheus.Metric, metr
 	ch <- prometheus.MustNewConstMetric(c.nvmePhysicalMediaUnitsWrittenLo, prometheus.CounterValue, metrics[1].Float(), device)
 	ch <- prometheus.MustNewConstMetric(c.nvmePhysicalMediaUnitsReadHi, prometheus.CounterValue, metrics[2].Float(), device)
 	ch <- prometheus.MustNewConstMetric(c.nvmePhysicalMediaUnitsReadLo, prometheus.CounterValue, metrics[3].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeBadUserNandBlocksRaw, prometheus.CounterValue, metrics[4].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeBadUserNandBlocksNormalized, prometheus.CounterValue, metrics[5].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeBadSystemNandBlocksRaw, prometheus.CounterValue, metrics[6].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeBadSystemNandBlocksNormalized, prometheus.CounterValue, metrics[7].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeXorRecoveryCount, prometheus.CounterValue, metrics[8].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeUncorrectableReadErrorCount, prometheus.CounterValue, metrics[9].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeSoftEccErrorCount, prometheus.CounterValue, metrics[10].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeEndToEndDetectedErrors, prometheus.CounterValue, metrics[11].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeEndToEndCorrectedErrors, prometheus.CounterValue, metrics[12].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeSystemDataPercentUsed, prometheus.GaugeValue, metrics[13].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeRefreshCounts, prometheus.CounterValue, metrics[14].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeMaxUserDataEraseCounts, prometheus.CounterValue, metrics[15].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeMinUserDataEraseCounts, prometheus.CounterValue, metrics[16].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeNumberOfThermalThrottlingEvents, prometheus.CounterValue, metrics[17].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeCurrentThrottlingStatus, prometheus.GaugeValue, metrics[18].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmePcieCorrectableErrorCount, prometheus.CounterValue, metrics[19].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeIncompleteShutdowns, prometheus.CounterValue, metrics[20].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmePercentFreeBlocks, prometheus.GaugeValue, metrics[21].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeCapacitorHealth, prometheus.GaugeValue, metrics[22].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeUnalignedIo, prometheus.CounterValue, metrics[23].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeSecurityVersionNumber, prometheus.GaugeValue, metrics[24].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeNuseNamespaceUtilization, prometheus.GaugeValue, metrics[25].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmePlpStartCount, prometheus.CounterValue, metrics[26].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeEnduranceEstimate, prometheus.GaugeValue, metrics[27].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeLogPageVersion, prometheus.GaugeValue, metrics[28].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeLogPageGuid, prometheus.GaugeValue, metrics[29].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeErrataVersionField, prometheus.GaugeValue, metrics[30].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmePointVersionField, prometheus.GaugeValue, metrics[31].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeMinorVersionField, prometheus.GaugeValue, metrics[32].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeMajorVersionField, prometheus.GaugeValue, metrics[33].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmeNvmeErrataVersion, prometheus.GaugeValue, metrics[34].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmePcieLinkRetrainingCount, prometheus.CounterValue, metrics[35].Float(), device)
+    ch <- prometheus.MustNewConstMetric(c.nvmePowerStateChangeCount, prometheus.CounterValue, metrics[36].Float(), device)
 }
 
 func main() {
