@@ -1,11 +1,5 @@
 package main
 
-/* Export nvme smart-log and OCP smart-log metrics in prometheus format
-nvme smart-log field descriptions can be found on page 209 of:
-https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-Revision-2.1-2024.08.05-Ratified.pdf
-nvme ocp-smart-log field descriptions can be found on page 24 of:
-https://www.opencompute.org/documents/datacenter-nvme-ssd-specification-v2-5-pdf */
-
 import (
 	"flag"
 	"fmt"
@@ -13,15 +7,27 @@ import (
 	"net/http"
 	"os/exec"
 	"os/user"
+	"regexp"
+	"strings"
 
 	"github.com/prometheus/client_golang/prometheus"
 	"github.com/prometheus/client_golang/prometheus/promhttp"
 	"github.com/tidwall/gjson"
 )
 
+var supportedVersions = map[string]bool{
+	"2.9":  true,
+}
+
 var labels = []string{"device"}
 
+func isSupportedVersion(version string) bool {
+	_, ok := supportedVersions[version]
+	return ok
+}
+
 type nvmeCollector struct {
+	ocp bool
 	nvmeCriticalWarning *prometheus.Desc
 	nvmeTemperature *prometheus.Desc
 	nvmeAvailSpare *prometheus.Desc
@@ -83,8 +89,9 @@ type nvmeCollector struct {
     nvmePowerStateChangeCount *prometheus.Desc
 }
 
-func newNvmeCollector() prometheus.Collector {
+func newNvmeCollector(ocp bool) prometheus.Collector {
 	return &nvmeCollector{
+		ocp: ocp,
 		nvmeCriticalWarning: prometheus.NewDesc(
 			"nvme_critical_warning",
 			"Critical warnings for the state of the controller",
@@ -520,7 +527,9 @@ func (c *nvmeCollector) Collect(ch chan<- prometheus.Metric) {
     nvmeDeviceList, _ := c.getDeviceList()
     for _, nvmeDevice := range nvmeDeviceList {
         c.collectSmartLogMetrics(ch, nvmeDevice)
-        c.collectOcpSmartLogMetrics(ch, nvmeDevice)
+		if c.ocp {
+            c.collectOcpSmartLogMetrics(ch, nvmeDevice)
+		}
     }
 }
 
@@ -676,8 +685,23 @@ func (c *nvmeCollector) sendOcpSmartLogMetrics(ch chan<- prometheus.Metric, metr
 }
 
 func main() {
+	flag.Usage = func() {
+		fmt.Println("nvme_exporter - Exports NVMe smart-log and smart-ocp-log metrics in Prometheus format")
+		fmt.Println("Validated with nvme smart-log field descriptions can be found on page 209 of:")
+		fmt.Println("https://nvmexpress.org/wp-content/uploads/NVM-Express-Base-Specification-Revision-2.1-2024.08.05-Ratified.pdf")
+		fmt.Println("Validated with nvme ocp-smart-log field descriptions can be found on page 24 of:")
+		fmt.Println("https://www.opencompute.org/documents/datacenter-nvme-ssd-specification-v2-5-pdf */")
+		fmt.Printf("It has been tested with nvme-cli versions:%v\n", supportedVersions)
+		fmt.Println("Usage: nvme_exporter [options]")
+		flag.PrintDefaults()
+	}
 	port := flag.String("port", "9998", "port to listen on")
+	ocp := flag.Bool("ocp", false, "Enable OCP smart log metrics")
+	endpoint := flag.String("endpoint", "/metrics", "Specify the endpoint to expose metrics")
 	flag.Parse()
+    if !strings.HasPrefix(*endpoint, "/") {
+	    *endpoint = "/" + *endpoint
+    }
 	// check user
 	currentUser, err := user.Current()
 	if err != nil {
@@ -689,9 +713,28 @@ func main() {
 	// check for nvme-cli executable
 	_, err = exec.LookPath("nvme")
 	if err != nil {
-		log.Fatalf("Cannot find nvme command in path: %s\n", err)
+		log.Fatalf("Cannot find NVMe cli command in path: %s\n", err)
 	}
-	prometheus.MustRegister(newNvmeCollector())
-	http.Handle("/metrics", promhttp.Handler())
+	// check for nvme-cli version
+    command := exec.Command("nvme", "--version")
+    out, err := command.CombinedOutput()
+	if err != nil {
+		log.Fatalf("error running nvme --version command: %s", err)
+	}
+	re := regexp.MustCompile(`nvme version (\d+\.\d+)\.\d+`)
+	match := re.FindStringSubmatch(string(out))
+	if match != nil {
+		version := match[1]
+		if !isSupportedVersion(version) {
+			log.Printf("NVMe cli version %s not supported, supported versions are: %v", version, supportedVersions)
+		}
+	} else {
+		log.Fatalf("Unable to find NVMe CLI version in output: %s", string(out))
+	}
+
+	prometheus.MustRegister(newNvmeCollector(*ocp))
+	http.Handle(*endpoint, promhttp.Handler())
+	log.Printf("Starting newNvmeCollector on port: %s, metrics endpoint: %s\n", *port, *endpoint)
+	log.Printf("newNvmeCollector is collecting OCP smart-log metrics: %t\n", *ocp)
 	log.Fatal(http.ListenAndServe(":"+*port, nil))
 }
