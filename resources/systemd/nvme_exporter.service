@@ -1,0 +1,19 @@
+[Unit]
+Description=NVMe Prom Exporter
+After=network-online.target
+
+[Service]
+Type=simple
+
+User=nvme_exporter
+Group=nvme_exporter
+
+ExecStart=/usr/bin/nvme_exporter
+
+SyslogIdentifier=nvme_exporter
+
+Restart=always
+RestartSec=1
+
+[Install]
+WantedBy=multi-user.target

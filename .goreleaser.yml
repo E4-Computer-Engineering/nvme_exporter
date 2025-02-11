@@ -1,0 +1,106 @@
+---
+version: 2
+before:
+  hooks:
+    - go mod download
+
+builds:
+  - id: nvme_exporter
+    main: ./cmd/nvme_exporter
+    binary: nvme_exporter
+    ldflags:
+      - -s -w
+      - -X github.com/prometheus/common/version.Version={{.Version}}
+      - -X github.com/prometheus/common/version.Revision={{.Commit}}
+      - -X github.com/prometheus/common/version.Branch={{.Branch}}
+      - -X github.com/prometheus/common/version.BuildUser=goreleaser
+      - -X github.com/prometheus/common/version.BuildDate={{.Date}}
+    env:
+      - CGO_ENABLED=0
+    goos:
+      - linux
+    goarch:
+      - amd64
+      - arm
+      - arm64
+    goarm:
+     - "7"
+
+archives:
+  - id: nvme_exporter-archive
+    name_template: >-
+      {{ .ProjectName }}_
+      {{- .Version }}_
+      {{- .Os }}_
+      {{- if eq .Arch "amd64" }}x86_64
+      {{- else }}{{ .Arch }}{{ end }}
+      {{- with .Arm }}v{{ . }}{{ end }}
+      {{- with .Mips }}_{{ . }}{{ end }}
+      {{- if not (eq .Amd64 "v1") }}{{ .Amd64 }}{{ end }}
+    builds:
+      - nvme_exporter
+    files:
+      - LICENSE
+
+nfpms:
+  - id: nvme_exporter
+    package_name: nvme-exporter
+    bindir: /usr/bin
+    vendor: E4 computer engineering
+    homepage: https://github.com/E4-Computer-Engineering/nvme_exporter
+    license: Apache-2.0
+    maintainer: Davide Obbi <davide.obbi@e4company.com>
+    section: misc
+    description: |-
+      NVMe exporter for prometheus.
+      This is a simple exporter that uses `nvme-cli` binary to collect,
+      parse and export metrics.
+    formats:
+      - deb
+      - rpm
+    contents:
+      - src: ./resources/systemd/nvme_exporter.service
+        dst: /usr/lib/systemd/system/nvme_exporter.service
+        file_info:
+          owner: root
+          group: root
+          mode: 0644
+      - src: ./LICENSE
+        dst: /usr/share/doc/nvme-exporter/copyright
+        file_info:
+          owner: root
+          group: root
+          mode: 0644
+    scripts:
+      preinstall: resources/scripts/pre-install.sh
+      postinstall: resources/scripts/post-install.sh
+      preremove: resources/scripts/pre-remove.sh
+      postremove: resources/scripts/post-remove.sh
+    deb:
+      lintian_overrides:
+        - statically-linked-binary
+        - changelog-file-missing-in-native-package
+        - no-manual-page
+        # Probably won't be implemented: https://github.com/goreleaser/nfpm/issues/15#issuecomment-830816661
+        - maintainer-script-calls-systemctl
+
+checksum:
+  name_template: checksums.txt
+  algorithm: sha256
+
+changelog:
+  sort: asc
+  filters:
+    exclude:
+      - '^build(\(.+\))?:'
+      - '^chore(\(.+\))?:'
+      - '^cd(\(.+\))?:'
+      - '^ci(\(.+\))?:'
+      - '^cicd(\(.+\))?:'
+      - '^docker(\(.+\))?:'
+      - '^docs(\(.+\))?:'
+      - '^refactor(\(.+\))?:'
+      - '^test(\(.+\))?:'
+      - Merge pull request
+      - Merge branch
+      - go mod tidy
