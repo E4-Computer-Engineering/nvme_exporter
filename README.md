@@ -25,13 +25,15 @@ Supported [NVMe CLI](https://github.com/linux-nvme/nvme-cli) versions:
 * Grafana: In [resources](resources/grafana/) for dashboards.
   * [smart-log dashboard](https://grafana.com/grafana/dashboards/14706)
 * Prometheus: In [resources](resources/prom/) for recording and alert rules.
+* Systemd: In [resources](resources/systemd/) for executing the exporter as unit.
+* Scripts: In [resources](resources/scripts/) for package installation hooks.
 
 ## Running
 
-Running the exporter requires the nvme-cli package to be installed on the host.
+Running the exporter requires the nvme-cli package to be installed on the host and be `root` account.
 
 ``` bash
-./nvme_exporter -h
+nvme_exporter -h
 ```
 
 ### Flags
@@ -41,9 +43,3 @@ Running the exporter requires the nvme-cli package to be installed on the host.
 |port | Listen port number. Type: String. | `9998` |
 |ocp | Enable OCP smart log metrics. Type: Bool. | `false` |
 |endpoint | The endpoint to query for metrics. Type: String. | `/metrics` |
-
-## Build
-
-``` bash
-go build .
-```

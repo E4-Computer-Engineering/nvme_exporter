@@ -5,8 +5,8 @@ After=network-online.target
 [Service]
 Type=simple
 
-User=nvme_exporter
-Group=nvme_exporter
+User=root
+Group=root
 
 ExecStart=/usr/bin/nvme_exporter
 

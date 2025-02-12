@@ -10,8 +10,6 @@ fi
 
 echo "Detected systemd as init system, proceeding"
 
-useradd -r nvme_exporter -s /bin/false || true
-
 systemctl daemon-reload
 
 systemctl enable nvme_exporter.service
