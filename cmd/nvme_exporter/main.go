@@ -457,31 +457,31 @@ func newNvmeCollector(ocp bool) prometheus.Collector {
 		nvmeNameSpace: prometheus.NewDesc(
 			"nvme_namespace",
 			"",
-            infoLabels,
+			infoLabels,
 			nil,
 		),
 		nvmeUsedBytes: prometheus.NewDesc(
 			"nvme_used_bytes",
 			"",
-            infoLabels,
+			infoLabels,
 			nil,
 		),
 		nvmeMaximumLba: prometheus.NewDesc(
 			"nvme_maximum_lba",
 			"",
-            infoLabels,
+			infoLabels,
 			nil,
 		),
 		nvmePhysicalSize: prometheus.NewDesc(
 			"nvme_physical_size",
 			"",
-            infoLabels,
+			infoLabels,
 			nil,
 		),
 		nvmeSectorSize: prometheus.NewDesc(
 			"nvme_sector_size",
 			"",
-            infoLabels,
+			infoLabels,
 			nil,
 		),
 	}
@@ -673,7 +673,7 @@ func (c *nvmeCollector) collectOcpSmartLogMetrics(ch chan<- prometheus.Metric, d
 
 func (c *nvmeCollector) sendInfoMetrics(ch chan<- prometheus.Metric, device gjson.Result) {
 	nameSpace := device.Get("NameSpace").Float()
-    devicePath := device.Get("DevicePath").String()
+	devicePath := device.Get("DevicePath").String()
 	genericPath := device.Get("GenericPath").String()
 	firmware := device.Get("Firmware").String()
 	modelNumber := device.Get("ModelNumber").String()
