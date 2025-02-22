@@ -87,10 +87,16 @@ type nvmeCollector struct {
 	nvmeNvmeErrataVersion                  *prometheus.Desc
 	nvmePcieLinkRetrainingCount            *prometheus.Desc
 	nvmePowerStateChangeCount              *prometheus.Desc
+	nvmeNameSpace                          *prometheus.Desc
+	nvmeUsedBytes                          *prometheus.Desc
+	nvmeMaximumLba                         *prometheus.Desc
+	nvmePhysicalSize                       *prometheus.Desc
+	nvmeSectorSize                         *prometheus.Desc
 }
 
 func newNvmeCollector(ocp bool) prometheus.Collector {
 	labels := []string{"device"}
+	infoLabels := []string{"device", "generic_path", "firmware", "model_number", "serial_number"}
 
 	return &nvmeCollector{
 		ocp: ocp,
@@ -448,6 +454,36 @@ func newNvmeCollector(ocp bool) prometheus.Collector {
 			labels,
 			nil,
 		),
+		nvmeNameSpace: prometheus.NewDesc(
+			"nvme_namespace",
+			"",
+			infoLabels,
+			nil,
+		),
+		nvmeUsedBytes: prometheus.NewDesc(
+			"nvme_used_bytes",
+			"",
+			infoLabels,
+			nil,
+		),
+		nvmeMaximumLba: prometheus.NewDesc(
+			"nvme_maximum_lba",
+			"",
+			infoLabels,
+			nil,
+		),
+		nvmePhysicalSize: prometheus.NewDesc(
+			"nvme_physical_size",
+			"",
+			infoLabels,
+			nil,
+		),
+		nvmeSectorSize: prometheus.NewDesc(
+			"nvme_sector_size",
+			"",
+			infoLabels,
+			nil,
+		),
 	}
 }
 
@@ -511,6 +547,11 @@ func (c *nvmeCollector) Describe(ch chan<- *prometheus.Desc) {
 	ch <- c.nvmeNvmeErrataVersion
 	ch <- c.nvmePcieLinkRetrainingCount
 	ch <- c.nvmePowerStateChangeCount
+	ch <- c.nvmeNameSpace
+	ch <- c.nvmeUsedBytes
+	ch <- c.nvmeMaximumLba
+	ch <- c.nvmePhysicalSize
+	ch <- c.nvmeSectorSize
 }
 
 func executeCommand(cmd string, args ...string) ([]byte, error) {
@@ -531,10 +572,12 @@ func executeCommand(cmd string, args ...string) ([]byte, error) {
 func (c *nvmeCollector) Collect(ch chan<- prometheus.Metric) {
 	nvmeDeviceList := c.getDeviceList()
 	for _, nvmeDevice := range nvmeDeviceList {
-		c.collectSmartLogMetrics(ch, nvmeDevice)
+		c.sendInfoMetrics(ch, nvmeDevice)
+		nvmeDevicePath := nvmeDevice.Get("DevicePath")
+		c.collectSmartLogMetrics(ch, nvmeDevicePath)
 
 		if c.ocp {
-			c.collectOcpSmartLogMetrics(ch, nvmeDevice)
+			c.collectOcpSmartLogMetrics(ch, nvmeDevicePath)
 		}
 	}
 }
@@ -545,7 +588,8 @@ func (c *nvmeCollector) getDeviceList() []gjson.Result {
 		log.Printf("Error running nvme list -o json: %s\n", err)
 	}
 
-	return gjson.Get(string(nvmeDeviceCmd), "Devices.#.DevicePath").Array()
+	// return gjson.Get(string(nvmeDeviceCmd), "Devices.#.DevicePath").Array()
+	return gjson.Get(string(nvmeDeviceCmd), "Devices").Array()
 }
 
 func (c *nvmeCollector) collectSmartLogMetrics(ch chan<- prometheus.Metric, device gjson.Result) {
@@ -625,6 +669,29 @@ func (c *nvmeCollector) collectOcpSmartLogMetrics(ch chan<- prometheus.Metric, d
 		"PCIe Link Retraining Count",
 		"Power State Change Count")
 	c.sendOcpSmartLogMetrics(ch, nvmeOcpSmartLogMetrics, device.String())
+}
+
+func (c *nvmeCollector) sendInfoMetrics(ch chan<- prometheus.Metric, device gjson.Result) {
+	nameSpace := device.Get("NameSpace").Float()
+	devicePath := device.Get("DevicePath").String()
+	genericPath := device.Get("GenericPath").String()
+	firmware := device.Get("Firmware").String()
+	modelNumber := device.Get("ModelNumber").String()
+	serialNumber := device.Get("SerialNumber").String()
+	usedBytes := device.Get("UsedBytes").Float()
+	maximumLba := device.Get("MaximumLBA").Float()
+	physicalSize := device.Get("PhysicalSize").Float()
+	sectorSize := device.Get("SectorSize").Float()
+	ch <- prometheus.MustNewConstMetric(
+		c.nvmeNameSpace, prometheus.GaugeValue, nameSpace, devicePath, genericPath, firmware, modelNumber, serialNumber)
+	ch <- prometheus.MustNewConstMetric(
+		c.nvmeUsedBytes, prometheus.GaugeValue, usedBytes, devicePath, genericPath, firmware, modelNumber, serialNumber)
+	ch <- prometheus.MustNewConstMetric(
+		c.nvmeMaximumLba, prometheus.GaugeValue, maximumLba, devicePath, genericPath, firmware, modelNumber, serialNumber)
+	ch <- prometheus.MustNewConstMetric(
+		c.nvmePhysicalSize, prometheus.GaugeValue, physicalSize, devicePath, genericPath, firmware, modelNumber, serialNumber)
+	ch <- prometheus.MustNewConstMetric(
+		c.nvmeSectorSize, prometheus.GaugeValue, sectorSize, devicePath, genericPath, firmware, modelNumber, serialNumber)
 }
 
 func (c *nvmeCollector) sendSmartLogMetrics(ch chan<- prometheus.Metric, metrics []gjson.Result, device string) {
