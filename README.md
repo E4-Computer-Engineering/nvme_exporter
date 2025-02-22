@@ -18,6 +18,16 @@ Supported [NVMe CLI](https://github.com/linux-nvme/nvme-cli) versions:
 |2.10 | TBD |
 |2.11 | TBD |
 
+## Metrics
+
+This collector exports the output of the following `nvme` cli commands:
+
+``` bash
+nvme list
+nvme smart-log <device_name>
+nvme ocp-smart-add-log <device_name>
+```
+
 ## Content
 
 * Docker: A sample Dockerfile and docker-compose.yaml are provided.
